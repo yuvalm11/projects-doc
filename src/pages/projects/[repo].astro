@@ -110,55 +110,6 @@ try {
     .use(remarkParse)
     .use(remarkMath)
     .use(remarkGfm)
-    .use(() => async (tree) => {
-      // Custom remark plugin to handle GitHub video URLs
-      const processNode = async (node) => {
-        if (node.url && node.url.includes('github.com/user-attachments/assets/')) {
-          const videoId = node.url.split('/').pop();
-          try {
-            // Fetch the actual video URL from GitHub's API
-            const response = await fetch(`https://api.github.com/repos/yuvalm11/${repo}/assets/${videoId}`, {
-              headers: {
-                'Accept': 'application/vnd.github.v3+json',
-                'User-Agent': 'Dev-Docs-Website'
-              }
-            });
-            
-            if (response.ok) {
-              const assetData = await response.json();
-              const videoUrl = assetData.browser_download_url;
-              
-              node.type = 'html';
-              node.value = `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">
-                <source src="${videoUrl}" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>`;
-            } else {
-              console.error('Failed to fetch video asset:', await response.text());
-              // Fallback to a link to the video
-              node.type = 'html';
-              node.value = `<a href="${node.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">
-                Watch the demo video (opens in GitHub)
-              </a>`;
-            }
-          } catch (error) {
-            console.error('Error fetching video asset:', error);
-            // Fallback to a link to the video
-            node.type = 'html';
-            node.value = `<a href="${node.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">
-              Watch the demo video (opens in GitHub)
-            </a>`;
-          }
-        }
-      };
-
-      // Process all nodes in the tree
-      for (const node of tree.children) {
-        if (node.type === 'image') {
-          await processNode(node);
-        }
-      }
-    })
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeKatex)
@@ -174,8 +125,43 @@ try {
 
   // Process the HTML to fix image and video URLs
   const processHtml = (html: string) => {
-    // Process images
+    // Get the appropriate video file based on the repository
+    const getVideoFile = (repo: string) => {
+      // Use a consistent video filename across all repositories
+      const videoFile = 'demo_video.mp4';
+      
+      // Log which repository we're getting the video for
+      console.log(`Getting video file for repository: ${repo}`);
+      return videoFile;
+    };
+
+    // Process GitHub user attachment URLs that are videos
     let processedHtml = html.replace(
+      /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/[^"]+)"[^>]*alt="[^"]*video[^"]*"[^>]*>/gi,
+      (match, src) => {
+        const videoFile = getVideoFile(repo);
+        if (!videoFile) return match; // Keep original if no video file configured
+        
+        const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
+        console.log('Using repository video file:', videoUrl);
+        return `<video controls playsinline class="markdown-video" src="${videoUrl}"></video>`;
+      }
+    );
+
+    // Process regular GitHub user attachment URLs (images)
+    processedHtml = processedHtml.replace(
+      /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/[^"]+)"[^>]*>/g,
+      (match, src) => {
+        // Convert GitHub user attachment URL to raw content URL
+        const assetId = src.split('/').pop();
+        const rawUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/assets/${assetId}`;
+        console.log('Converting GitHub user attachment URL:', src, 'to:', rawUrl);
+        return match.replace(src, rawUrl);
+      }
+    );
+
+    // Process regular images
+    processedHtml = processedHtml.replace(
       /<img[^>]+src="([^"]+)"[^>]*>/g,
       (match, src) => {
         if (src.startsWith('http')) return match;
@@ -194,26 +180,30 @@ try {
 
     // Process videos
     processedHtml = processedHtml.replace(
-      /<video[^>]*>([\s\S]*?)<\/video>/g,
-      (match, content) => {
-        // Process video sources
-        const processedContent = content.replace(
-          /<source[^>]+src="([^"]+)"[^>]*>/g,
-          (sourceMatch, src) => {
-            if (src.startsWith('http')) {
-              // Ensure HTTPS for external URLs
-              const httpsUrl = src.replace(/^http:/, 'https:');
-              return sourceMatch.replace(src, httpsUrl);
-            }
-            // Handle relative paths
-            const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
-            console.log('Converting video source path:', src, 'to:', fullUrl);
-            return sourceMatch.replace(src, fullUrl);
+      /<video[^>]*src="([^"]+)"[^>]*>/g,
+      (match, src) => {
+        if (src.startsWith('http')) {
+          // Handle GitHub user attachment URLs for videos
+          if (src.includes('github.com/user-attachments/assets/')) {
+            const videoFile = getVideoFile(repo);
+            if (!videoFile) return match; // Keep original if no video file configured
+            
+            const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
+            console.log('Using repository video file for video element:', videoUrl);
+            return `<video controls playsinline class="markdown-video" src="${videoUrl}"></video>`;
           }
-        );
-
-        // Add necessary video attributes for better browser compatibility
-        return `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">${processedContent}</video>`;
+          return match;
+        }
+        // Handle absolute paths (starting with /)
+        if (src.startsWith('/')) {
+          const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main${src}`;
+          console.log('Converting absolute video path:', src, 'to:', fullUrl);
+          return `<video controls playsinline class="markdown-video" src="${fullUrl}"></video>`;
+        }
+        // Handle relative paths (no leading /)
+        const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
+        console.log('Converting relative video path:', src, 'to:', fullUrl);
+        return `<video controls playsinline class="markdown-video" src="${fullUrl}"></video>`;
       }
     );
 
@@ -357,23 +347,29 @@ if (!finalContent) {
   .prose h6:hover .anchor-link {
     opacity: 1;
   }
-  
   /* Video styling */
-  .markdown-content video {
+  .markdown-video {
+    width: 100%;
     max-width: 100%;
     height: auto;
     margin: 1rem auto;
     border-radius: 0.5rem;
+    display: block;
     background-color: #000;
   }
-  
-  /* Ensure video controls are visible in dark mode */
-  .dark .markdown-content video::-webkit-media-controls {
-    background-color: rgba(0, 0, 0, 0.5);
+
+  /* Ensure videos are responsive */
+  .prose video {
+    max-width: 100%;
+    height: auto;
   }
-  
-  .dark .markdown-content video::-webkit-media-controls-panel {
-    background-color: rgba(0, 0, 0, 0.5);
+
+  /* Add a subtle border to videos */
+  .markdown-content video {
+    border: 1px solid #e5e7eb;
+  }
+  .dark .markdown-content video {
+    border-color: #374151;
   }
 </style>
 
