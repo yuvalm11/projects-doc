@@ -5,6 +5,9 @@ interface Props {
 }
 
 const { title, description = "Documentations of projects I built" } = Astro.props;
+
+// Format the title to be "uv's website | Page Title"
+const formattedTitle = title === "Home" ? "uv's website" : `uv's website | ${title}`;
 ---
 
 <!DOCTYPE html>
@@ -14,7 +17,7 @@ const { title, description = "Documentations of projects I built" } = Astro.prop
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/projects-doc/favicon.svg" />
-    <title>{title}</title>
+    <title>{formattedTitle}</title>
   </head>
   <body class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <header class="bg-white dark:bg-gray-800 shadow-sm">
