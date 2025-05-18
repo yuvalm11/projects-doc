@@ -110,20 +110,54 @@ try {
     .use(remarkParse)
     .use(remarkMath)
     .use(remarkGfm)
-    .use(() => (tree) => {
+    .use(() => async (tree) => {
       // Custom remark plugin to handle GitHub video URLs
-      visit(tree, 'image', (node) => {
+      const processNode = async (node) => {
         if (node.url && node.url.includes('github.com/user-attachments/assets/')) {
-          // Convert GitHub video URL to a proper video element
           const videoId = node.url.split('/').pop();
-          const videoUrl = `https://github.com/yuvalm11/${repo}/assets/${videoId}`;
-          node.type = 'html';
-          node.value = `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">
-            <source src="${videoUrl}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>`;
+          try {
+            // Fetch the actual video URL from GitHub's API
+            const response = await fetch(`https://api.github.com/repos/yuvalm11/${repo}/assets/${videoId}`, {
+              headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Dev-Docs-Website'
+              }
+            });
+            
+            if (response.ok) {
+              const assetData = await response.json();
+              const videoUrl = assetData.browser_download_url;
+              
+              node.type = 'html';
+              node.value = `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">
+                <source src="${videoUrl}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>`;
+            } else {
+              console.error('Failed to fetch video asset:', await response.text());
+              // Fallback to a link to the video
+              node.type = 'html';
+              node.value = `<a href="${node.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">
+                Watch the demo video (opens in GitHub)
+              </a>`;
+            }
+          } catch (error) {
+            console.error('Error fetching video asset:', error);
+            // Fallback to a link to the video
+            node.type = 'html';
+            node.value = `<a href="${node.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">
+              Watch the demo video (opens in GitHub)
+            </a>`;
+          }
         }
-      });
+      };
+
+      // Process all nodes in the tree
+      for (const node of tree.children) {
+        if (node.type === 'image') {
+          await processNode(node);
+        }
+      }
     })
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
