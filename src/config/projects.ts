@@ -1,0 +1,32 @@
+export interface Project {
+  name: string;
+  description: string;
+  repo: string;
+  tags: string[];
+  githubUrl: string;
+}
+
+export const projects: Project[] = [
+  {
+    name: 'Inverted Pendulum',
+    description: 'Policy Gradient RL algorithm for the cartpole problem',
+    repo: 'inverted-pendulum',
+    tags: ['Reinforcement Learning', 'JAX', 'Control Theory'],
+    githubUrl: 'https://github.com/yuvalm11/inverted-pendulum'
+  },
+  {
+    name: 'MNIST Variational Autoencoder',
+    description: 'Variational Autoencoder for MNIST image generation with a lightweight CNN classifier',
+    repo: 'mnist-vae',
+    tags: ['Variational Autoencoder', 'Computer Vision', 'PyTorch', 'CNN'],
+    githubUrl: 'https://github.com/yuvalm11/mnist-vae'
+  },
+  {
+    name: 'Motor Position Correction',
+    description: 'Error correction algorithm using Fourier analysis for accurate stepper motor control',
+    repo: 'motor-position-correction',
+    tags: ['Signal Processing', 'Control Systems', 'Python', 'Fourier Analysis'],
+    githubUrl: 'https://github.com/yuvalm11/motor-position-correction'
+  }
+  // Add more projects here as they become available
+]; 

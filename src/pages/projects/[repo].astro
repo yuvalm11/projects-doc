@@ -1,0 +1,286 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
+import rehypeRaw from 'rehype-raw';
+import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import { projects, type Project } from '../../config/projects';
+import { visit } from 'unist-util-visit';
+
+// Define which repositories to pre-render
+export async function getStaticPaths() {
+  console.log('Generating static paths for repositories...');
+  
+  const paths = projects.map(project => ({
+    params: { repo: project.repo },
+    props: { project }  // Pass the entire project object
+  }));
+  
+  console.log('Generated paths:', paths);
+  return paths;
+}
+
+interface Props {
+  project: Project;
+}
+
+const { repo } = Astro.params;
+const { project } = Astro.props;
+
+if (!repo) {
+  console.error('No repository name provided');
+  return Astro.redirect('/error?message=' + encodeURIComponent('No repository name provided'));
+}
+
+// Validate that the repo matches our project configuration
+const configuredProject = projects.find(p => p.repo === repo);
+if (!configuredProject) {
+  console.error('Repository not found in configuration:', repo);
+  return Astro.redirect('/error?message=' + encodeURIComponent('Repository not found in configuration'));
+}
+
+let repoData;
+let finalContent: string;
+
+try {
+  // GitHub API endpoint for the repository
+  const repoUrl = `https://api.github.com/repos/yuvalm11/${repo}`;
+  const readmeUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/README.md`;
+
+  console.log('Fetching repository data from:', repoUrl);
+  
+  // Fetch repository data with headers to avoid rate limiting
+  const repoResponse = await fetch(repoUrl, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'Dev-Docs-Website'
+    }
+  });
+
+  if (!repoResponse.ok) {
+    const errorText = await repoResponse.text();
+    console.error('GitHub API Error:', {
+      status: repoResponse.status,
+      statusText: repoResponse.statusText,
+      headers: Object.fromEntries(repoResponse.headers.entries()),
+      body: errorText
+    });
+    throw new Error(`Failed to fetch repository data: ${repoResponse.status} ${repoResponse.statusText}\n${errorText}`);
+  }
+
+  repoData = await repoResponse.json();
+  console.log('Repository data fetched successfully:', {
+    name: repoData.name,
+    description: repoData.description,
+    visibility: repoData.visibility
+  });
+
+  // Fetch README content
+  console.log('Fetching README from:', readmeUrl);
+  const readmeResponse = await fetch(readmeUrl, {
+    headers: {
+      'Accept': 'application/vnd.github.v3.raw',
+      'User-Agent': 'Dev-Docs-Website'
+    }
+  });
+
+  if (!readmeResponse.ok) {
+    const errorText = await readmeResponse.text();
+    console.error('GitHub README Error:', {
+      status: readmeResponse.status,
+      statusText: readmeResponse.statusText,
+      headers: Object.fromEntries(readmeResponse.headers.entries()),
+      body: errorText
+    });
+    throw new Error(`Failed to fetch README: ${readmeResponse.status} ${readmeResponse.statusText}\n${errorText}`);
+  }
+
+  const readmeContent = await readmeResponse.text();
+  console.log('Raw README content:', readmeContent);
+
+  // Process Markdown with math support
+  const processedContent = await unified()
+    .use(remarkParse)
+    .use(remarkMath)
+    .use(remarkGfm)
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeRaw)
+    .use(rehypeKatex)
+    .use(rehypeSlug)
+    .use(rehypeAutolinkHeadings, {
+      behavior: 'wrap',
+      properties: {
+        class: 'anchor-link'
+      }
+    })
+    .use(rehypeStringify)
+    .process(readmeContent);
+
+  // Process the HTML to fix image URLs
+  const processHtml = (html: string) => {
+    return html.replace(
+      /<img[^>]+src="([^"]+)"[^>]*>/g,
+      (match, src) => {
+        if (src.startsWith('http')) return match;
+        // Handle absolute paths (starting with /)
+        if (src.startsWith('/')) {
+          const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main${src}`;
+          console.log('Converting absolute image path:', src, 'to:', fullUrl);
+          return match.replace(src, fullUrl);
+        }
+        // Handle relative paths (no leading /)
+        const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
+        console.log('Converting relative image path:', src, 'to:', fullUrl);
+        return match.replace(src, fullUrl);
+      }
+    );
+  };
+
+  finalContent = processHtml(String(processedContent));
+  console.log('Final HTML content:', finalContent);
+} catch (error) {
+  console.error('Error in [repo].astro:', error);
+  return Astro.redirect('/error?message=' + encodeURIComponent(error.message));
+}
+
+if (!finalContent) {
+  return Astro.redirect('/error?message=' + encodeURIComponent('Failed to process README content'));
+}
+---
+
+<Layout title={`${project.name} - Dev Docs`}>
+  <article class="prose dark:prose-invert max-w-none">
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          {project.name}
+        </h1>
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 text-lg mb-4">
+        {project.description}
+      </p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        {project.tags.map((tag) => (
+          <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-full">
+            {tag}
+          </span>
+        ))}
+      </div>
+      <div class="flex items-center justify-between mb-6 text-sm text-gray-500 dark:text-gray-400">
+        <div class="flex items-center space-x-4">
+          <span>⭐ {repoData.stargazers_count} stars</span>
+          <span>🔀 {repoData.forks_count} forks</span>
+          <span>👁️ {repoData.watchers_count} watchers</span>
+          <span>📝 {repoData.language}</span>
+        </div>
+        <a
+          href={project.githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="github-link inline-flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700 mb-6"></div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div class="markdown-content">
+          <Fragment set:html={finalContent} />
+        </div>
+      </div>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .prose {
+    max-width: 85ch;
+    margin: 0 auto;
+  }
+  .prose img {
+    margin: 1rem auto;
+    border-radius: 0.5rem;
+    display: block;
+  }
+  /* Add specific styles for images in markdown content */
+  .markdown-content img {
+    margin: 1rem auto;
+    max-width: 100%;
+    height: auto;
+  }
+  .prose pre {
+    background-color: #1a1a1a;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+  .prose code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+  }
+  .dark .prose code {
+    background-color: #374151;
+  }
+  /* Override link styles for the GitHub link */
+  .github-link {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  .github-link:hover {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  .prose a {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  .prose a:hover {
+    text-decoration: underline;
+  }
+  .dark .prose a {
+    color: #60a5fa;
+  }
+  /* Math styling */
+  .prose .math {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .prose .math-inline {
+    display: inline-block;
+  }
+  .prose .math-display {
+    display: block;
+    margin: 1em 0;
+    text-align: center;
+  }
+  /* Anchor link styling */
+  .anchor-link {
+    text-decoration: none;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .prose h1:hover .anchor-link,
+  .prose h2:hover .anchor-link,
+  .prose h3:hover .anchor-link,
+  .prose h4:hover .anchor-link,
+  .prose h5:hover .anchor-link,
+  .prose h6:hover .anchor-link {
+    opacity: 1;
+  }
+</style>
+
+<!-- Add KaTeX CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous"> 
