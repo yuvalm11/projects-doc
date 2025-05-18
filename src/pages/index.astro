@@ -7,17 +7,17 @@ import { projects } from '../config/projects';
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 		<div class="text-center mb-12">
 			<h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-				Welcome to Dev Docs
+				Hi.
 			</h1>
-			<p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-				A collection of project documentation from GitHub repositories, making it easy to browse and understand various projects.
+			<p class="text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto">
+				I'm Yuval and I just graduated from MIT with a degree in Computer Science.<br>I love building stuff and I'll be documenting some of my projects in this website.
 			</p>
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			{projects.map((project) => (
 				<a 
-					href={`/dev-docs/projects/${project.repo}`}
+					href={`/projects-doc/projects/${project.repo}`}
 					class="block bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
 				>
 					<div class="flex flex-col h-full">
