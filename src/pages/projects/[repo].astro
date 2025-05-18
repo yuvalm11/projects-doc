@@ -327,10 +327,16 @@ if (!finalContent) {
   .prose .math-inline {
     display: inline-block;
   }
-  .prose .math-display {
-    display: block;
-    margin: 1em 0;
-    text-align: center;
+  /* Improved: Make KaTeX and math display blocks scrollable on mobile */
+  .prose .math-display,
+  .prose .katex-display,
+  .math-display,
+  .katex-display {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    display: block !important;
+    padding-bottom: 0.5em;
   }
   /* Anchor link styling */
   .anchor-link {
@@ -370,6 +376,34 @@ if (!finalContent) {
   }
   .dark .markdown-content video {
     border-color: #374151;
+  }
+  /* Prevent page from shrinking too much on mobile */
+  body {
+    min-width: 320px;
+  }
+  /* Allow horizontal scrolling for prose and markdown content */
+  .prose, .markdown-content {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 85ch;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) {
+    .prose, .markdown-content {
+      max-width: 100vw;
+    }
+  }
+  /* Robust: Make all math display blocks scrollable */
+  .prose .math-display,
+  .prose .katex-display,
+  .math-display,
+  .katex-display,
+  mjx-container {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    display: block !important;
+    padding-bottom: 0.5em;
   }
 </style>
 
