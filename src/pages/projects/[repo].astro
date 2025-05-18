@@ -123,9 +123,10 @@ try {
     .use(rehypeStringify)
     .process(readmeContent);
 
-  // Process the HTML to fix image URLs
+  // Process the HTML to fix image and video URLs
   const processHtml = (html: string) => {
-    return html.replace(
+    // Process images
+    let processedHtml = html.replace(
       /<img[^>]+src="([^"]+)"[^>]*>/g,
       (match, src) => {
         if (src.startsWith('http')) return match;
@@ -141,6 +142,33 @@ try {
         return match.replace(src, fullUrl);
       }
     );
+
+    // Process videos
+    processedHtml = processedHtml.replace(
+      /<video[^>]*>([\s\S]*?)<\/video>/g,
+      (match, content) => {
+        // Process video sources
+        const processedContent = content.replace(
+          /<source[^>]+src="([^"]+)"[^>]*>/g,
+          (sourceMatch, src) => {
+            if (src.startsWith('http')) {
+              // Ensure HTTPS for external URLs
+              const httpsUrl = src.replace(/^http:/, 'https:');
+              return sourceMatch.replace(src, httpsUrl);
+            }
+            // Handle relative paths
+            const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
+            console.log('Converting video source path:', src, 'to:', fullUrl);
+            return sourceMatch.replace(src, fullUrl);
+          }
+        );
+
+        // Add necessary video attributes for better browser compatibility
+        return `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">${processedContent}</video>`;
+      }
+    );
+
+    return processedHtml;
   };
 
   finalContent = processHtml(String(processedContent));
@@ -279,6 +307,24 @@ if (!finalContent) {
   .prose h5:hover .anchor-link,
   .prose h6:hover .anchor-link {
     opacity: 1;
+  }
+  
+  /* Video styling */
+  .markdown-content video {
+    max-width: 100%;
+    height: auto;
+    margin: 1rem auto;
+    border-radius: 0.5rem;
+    background-color: #000;
+  }
+  
+  /* Ensure video controls are visible in dark mode */
+  .dark .markdown-content video::-webkit-media-controls {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .dark .markdown-content video::-webkit-media-controls-panel {
+    background-color: rgba(0, 0, 0, 0.5);
   }
 </style>
 
