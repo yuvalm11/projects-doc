@@ -110,6 +110,21 @@ try {
     .use(remarkParse)
     .use(remarkMath)
     .use(remarkGfm)
+    .use(() => (tree) => {
+      // Custom remark plugin to handle GitHub video URLs
+      visit(tree, 'image', (node) => {
+        if (node.url && node.url.includes('github.com/user-attachments/assets/')) {
+          // Convert GitHub video URL to a proper video element
+          const videoId = node.url.split('/').pop();
+          const videoUrl = `https://github.com/yuvalm11/${repo}/assets/${videoId}`;
+          node.type = 'html';
+          node.value = `<video controls playsinline class="w-full rounded-lg my-4" crossorigin="anonymous">
+            <source src="${videoUrl}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>`;
+        }
+      });
+    })
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeKatex)
