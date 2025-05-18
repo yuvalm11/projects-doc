@@ -7,6 +7,6 @@ import mdx from '@astrojs/mdx';
 export default defineConfig({
   integrations: [tailwind(), mdx()],
   site: 'https://yuvalm11.github.io',
-  base: '/',
+  base: '/projects-doc',
   output: 'static'
 });
