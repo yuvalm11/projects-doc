@@ -1,224 +1,83 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { Image } from 'astro:assets';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import remarkGfm from 'remark-gfm';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkRehype from 'remark-rehype';
-import rehypeStringify from 'rehype-stringify';
-import rehypeRaw from 'rehype-raw';
-import rehypeSlug from 'rehype-slug';
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import { projects, type Project } from '../../config/projects';
-import { visit } from 'unist-util-visit';
+import { processMarkdown } from '../../utils/markdown';
 
-// Define which repositories to pre-render
+// Define which repositories to pre-render and fetch their data
 export async function getStaticPaths() {
-  console.log('Generating static paths for repositories...');
+  console.log('Generating static paths and fetching data for repositories...');
   
-  const paths = projects.map(project => ({
-    params: { repo: project.repo },
-    props: { project }  // Pass the entire project object
+  const paths = await Promise.all(projects.map(async (project) => {
+    try {
+      // GitHub API endpoint for the repository
+      const repoUrl = `https://api.github.com/repos/yuvalm11/${project.repo}`;
+      const readmeUrl = `https://raw.githubusercontent.com/yuvalm11/${project.repo}/main/README.md`;
+
+      // Fetch repository data
+      const repoResponse = await fetch(repoUrl, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Dev-Docs-Website'
+        }
+      });
+
+      if (!repoResponse.ok) {
+        throw new Error(`Failed to fetch repository data: ${repoResponse.status} ${repoResponse.statusText}`);
+      }
+
+      const repoData = await repoResponse.json();
+
+      // Fetch README content
+      const readmeResponse = await fetch(readmeUrl, {
+        headers: {
+          'Accept': 'application/vnd.github.v3.raw',
+          'User-Agent': 'Dev-Docs-Website'
+        }
+      });
+
+      if (!readmeResponse.ok) {
+        throw new Error(`Failed to fetch README: ${readmeResponse.status} ${readmeResponse.statusText}`);
+      }
+
+      const readmeContent = await readmeResponse.text();
+      const processedContent = await processMarkdown(readmeContent, project.repo);
+
+      return {
+        params: { repo: project.repo },
+        props: { 
+          project,
+          repoData,
+          processedContent
+        }
+      };
+    } catch (error) {
+      console.error(`Error fetching data for ${project.repo}:`, error);
+      throw error;
+    }
   }));
-  
-  console.log('Generated paths:', paths);
+
+  console.log('Generated paths with data:', paths.map(p => p.params.repo));
   return paths;
 }
 
 interface Props {
   project: Project;
+  repoData: any;
+  processedContent: string;
 }
 
 const { repo } = Astro.params;
-const { project } = Astro.props;
+const { project, repoData, processedContent } = Astro.props;
 
 if (!repo) {
-  console.error('No repository name provided');
   return Astro.redirect('/error?message=' + encodeURIComponent('No repository name provided'));
 }
 
 // Validate that the repo matches our project configuration
 const configuredProject = projects.find(p => p.repo === repo);
 if (!configuredProject) {
-  console.error('Repository not found in configuration:', repo);
   return Astro.redirect('/error?message=' + encodeURIComponent('Repository not found in configuration'));
-}
-
-let repoData;
-let finalContent: string;
-
-try {
-  // GitHub API endpoint for the repository
-  const repoUrl = `https://api.github.com/repos/yuvalm11/${repo}`;
-  const readmeUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/README.md`;
-
-  console.log('Fetching repository data from:', repoUrl);
-  
-  // Fetch repository data with headers to avoid rate limiting
-  const repoResponse = await fetch(repoUrl, {
-    headers: {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'Dev-Docs-Website'
-    }
-  });
-
-  if (!repoResponse.ok) {
-    const errorText = await repoResponse.text();
-    console.error('GitHub API Error:', {
-      status: repoResponse.status,
-      statusText: repoResponse.statusText,
-      headers: Object.fromEntries(repoResponse.headers.entries()),
-      body: errorText
-    });
-    throw new Error(`Failed to fetch repository data: ${repoResponse.status} ${repoResponse.statusText}\n${errorText}`);
-  }
-
-  repoData = await repoResponse.json();
-  console.log('Repository data fetched successfully:', {
-    name: repoData.name,
-    description: repoData.description,
-    visibility: repoData.visibility
-  });
-
-  // Fetch README content
-  console.log('Fetching README from:', readmeUrl);
-  const readmeResponse = await fetch(readmeUrl, {
-    headers: {
-      'Accept': 'application/vnd.github.v3.raw',
-      'User-Agent': 'Dev-Docs-Website'
-    }
-  });
-
-  if (!readmeResponse.ok) {
-    const errorText = await readmeResponse.text();
-    console.error('GitHub README Error:', {
-      status: readmeResponse.status,
-      statusText: readmeResponse.statusText,
-      headers: Object.fromEntries(readmeResponse.headers.entries()),
-      body: errorText
-    });
-    throw new Error(`Failed to fetch README: ${readmeResponse.status} ${readmeResponse.statusText}\n${errorText}`);
-  }
-
-  const readmeContent = await readmeResponse.text();
-  console.log('Raw README content:', readmeContent);
-
-  // Process Markdown with math support
-  const processedContent = await unified()
-    .use(remarkParse)
-    .use(remarkMath)
-    .use(remarkGfm)
-    .use(remarkRehype, { allowDangerousHtml: true })
-    .use(rehypeRaw)
-    .use(rehypeKatex)
-    .use(rehypeSlug)
-    .use(rehypeAutolinkHeadings, {
-      behavior: 'wrap',
-      properties: {
-        class: 'anchor-link'
-      }
-    })
-    .use(rehypeStringify)
-    .process(readmeContent);
-
-  // Process the HTML to fix image and video URLs
-  const processHtml = (html: string) => {
-    // Get the appropriate video file based on the repository
-    const getVideoFile = (repo: string) => {
-      // Use a consistent video filename across all repositories
-      const videoFile = 'demo_video.mp4';
-      
-      // Log which repository we're getting the video for
-      console.log(`Getting video file for repository: ${repo}`);
-      return videoFile;
-    };
-
-    // Process GitHub user attachment URLs that are videos
-    let processedHtml = html.replace(
-      /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/[^"]+)"[^>]*alt="[^"]*video[^"]*"[^>]*>/gi,
-      (match, src) => {
-        const videoFile = getVideoFile(repo);
-        if (!videoFile) return match; // Keep original if no video file configured
-        
-        const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
-        console.log('Using repository video file:', videoUrl);
-        return `<video controls playsinline class="markdown-video" src="${videoUrl}"></video>`;
-      }
-    );
-
-    // Process regular GitHub user attachment URLs (images)
-    processedHtml = processedHtml.replace(
-      /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/[^"]+)"[^>]*>/g,
-      (match, src) => {
-        // Convert GitHub user attachment URL to raw content URL
-        const assetId = src.split('/').pop();
-        const rawUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/assets/${assetId}`;
-        console.log('Converting GitHub user attachment URL:', src, 'to:', rawUrl);
-        return match.replace(src, rawUrl);
-      }
-    );
-
-    // Process regular images
-    processedHtml = processedHtml.replace(
-      /<img[^>]+src="([^"]+)"[^>]*>/g,
-      (match, src) => {
-        if (src.startsWith('http')) return match;
-        // Handle absolute paths (starting with /)
-        if (src.startsWith('/')) {
-          const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main${src}`;
-          console.log('Converting absolute image path:', src, 'to:', fullUrl);
-          return match.replace(src, fullUrl);
-        }
-        // Handle relative paths (no leading /)
-        const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
-        console.log('Converting relative image path:', src, 'to:', fullUrl);
-        return match.replace(src, fullUrl);
-      }
-    );
-
-    // Process videos
-    processedHtml = processedHtml.replace(
-      /<video[^>]*src="([^"]+)"[^>]*>/g,
-      (match, src) => {
-        if (src.startsWith('http')) {
-          // Handle GitHub user attachment URLs for videos
-          if (src.includes('github.com/user-attachments/assets/')) {
-            const videoFile = getVideoFile(repo);
-            if (!videoFile) return match; // Keep original if no video file configured
-            
-            const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
-            console.log('Using repository video file for video element:', videoUrl);
-            return `<video controls playsinline class="markdown-video" src="${videoUrl}"></video>`;
-          }
-          return match;
-        }
-        // Handle absolute paths (starting with /)
-        if (src.startsWith('/')) {
-          const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main${src}`;
-          console.log('Converting absolute video path:', src, 'to:', fullUrl);
-          return `<video controls playsinline class="markdown-video" src="${fullUrl}"></video>`;
-        }
-        // Handle relative paths (no leading /)
-        const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
-        console.log('Converting relative video path:', src, 'to:', fullUrl);
-        return `<video controls playsinline class="markdown-video" src="${fullUrl}"></video>`;
-      }
-    );
-
-    return processedHtml;
-  };
-
-  finalContent = processHtml(String(processedContent));
-  console.log('Final HTML content:', finalContent);
-} catch (error) {
-  console.error('Error in [repo].astro:', error);
-  return Astro.redirect('/error?message=' + encodeURIComponent(error.message));
-}
-
-if (!finalContent) {
-  return Astro.redirect('/error?message=' + encodeURIComponent('Failed to process README content'));
 }
 ---
 
@@ -254,7 +113,7 @@ if (!finalContent) {
           class="github-link inline-flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
           </svg>
           View on GitHub
         </a>
@@ -263,7 +122,7 @@ if (!finalContent) {
 
       <div class="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-md p-6">
         <div class="markdown-content">
-          <Fragment set:html={finalContent} />
+          <Fragment set:html={processedContent} />
         </div>
       </div>
     </div>
