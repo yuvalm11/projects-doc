@@ -22,6 +22,13 @@ export const projects: Project[] = [
     githubUrl: 'https://github.com/yuvalm11/mnist-vae'
   },
   {
+    name: 'Prompter Plotter',
+    description: 'Use AI image generation to create a real life drawing',
+    repo: 'prompter-plotter',
+    tags: ['Generative AI', 'Machine building', 'Python', 'Image processing'],
+    githubUrl: 'https://github.com/yuvalm11/prompter-plotter'
+  },
+  {
     name: 'Motor Position Correction',
     description: 'Error correction algorithm using Fourier analysis for accurate stepper motor control',
     repo: 'motor-position-correction',
