@@ -13,8 +13,15 @@ import rehypeStringify from 'rehype-stringify';
 export function processHtml(html: string, repo: string) {
   // Get the appropriate video file based on the repository
   const getVideoFile = (repo: string) => {
-    const videoFile = 'demo_video.mp4';
-    return videoFile;
+    // Map repository names to their video files
+    const videoFiles: { [key: string]: string } = {
+      'inverted-pendulum': 'demo_video.mp4',
+      'mnist-vae': 'demo_video.mp4',
+      'motor-position-correction': 'demo_video.mp4',
+      'prompter-plotter': 'demo_video.mp4' // You'll need to add this file to your repo
+    };
+    
+    return videoFiles[repo] || 'demo_video.mp4';
   };
 
   // Process GitHub user attachment URLs that are videos
