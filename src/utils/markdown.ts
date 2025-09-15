@@ -11,24 +11,35 @@ import rehypeStringify from 'rehype-stringify';
 
 // Process the HTML to fix image and video URLs
 export function processHtml(html: string, repo: string) {
-  // Get the appropriate video file based on the repository
-  const getVideoFile = (repo: string) => {
-    // Map repository names to their video files
-    const videoFiles: { [key: string]: string } = {
-      'inverted-pendulum': 'demo_video.mp4',
-      'mnist-vae': 'demo_video.mp4',
-      'motor-position-correction': 'demo_video.mp4',
-      'prompter-plotter': 'demo_video.mp4' // You'll need to add this file to your repo
+  // Get the appropriate video file based on the repository and attachment ID
+  const getVideoFile = (repo: string, attachmentId?: string) => {
+    // Map repository names and attachment IDs to their video files
+    const videoFiles: { [key: string]: { [key: string]: string } } = {
+      'inverted-pendulum': {
+        'default': 'demo_video.mp4'
+      },
+      'mnist-vae': {
+        'default': 'demo_video.mp4'
+      },
+      'motor-position-correction': {
+        'default': 'demo_video.mp4'
+      },
+      'prompter-plotter': {
+        '4e38d26d-b78d-4b40-9968-4daa16c79359': 'intro_video.mp4', // First video
+        'ebbefab2-2eee-4592-a7b4-9ad754dcc5d3': 'mechanics_video.mp4', // Second video
+        'default': 'demo_video.mp4'
+      }
     };
     
-    return videoFiles[repo] || 'demo_video.mp4';
+    const repoVideos = videoFiles[repo] || { 'default': 'demo_video.mp4' };
+    return attachmentId ? (repoVideos[attachmentId] || repoVideos['default']) : repoVideos['default'];
   };
 
   // Process GitHub user attachment URLs that are videos
   let processedHtml = html.replace(
-    /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/[^"]+)"[^>]*alt="[^"]*video[^"]*"[^>]*>/gi,
-    (match, src) => {
-      const videoFile = getVideoFile(repo);
+    /<img[^>]+src="(https:\/\/github\.com\/user-attachments\/assets\/([^"]+))"[^>]*alt="[^"]*video[^"]*"[^>]*>/gi,
+    (match, src, attachmentId) => {
+      const videoFile = getVideoFile(repo, attachmentId);
       if (!videoFile) return match;
       
       const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
@@ -66,7 +77,8 @@ export function processHtml(html: string, repo: string) {
     (match, src) => {
       if (src.startsWith('http')) {
         if (src.includes('github.com/user-attachments/assets/')) {
-          const videoFile = getVideoFile(repo);
+          const attachmentId = src.split('/').pop();
+          const videoFile = getVideoFile(repo, attachmentId);
           if (!videoFile) return match;
           
           const videoUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${videoFile}`;
