@@ -55,7 +55,7 @@ export function processHtml(html: string, repo: string) {
       const rawUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/assets/${assetId}`;
       return match.replace(src, rawUrl);
     }
-  );
+  ); 
 
   // Process regular images
   processedHtml = processedHtml.replace(
