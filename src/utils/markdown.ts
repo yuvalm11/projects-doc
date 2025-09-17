@@ -57,7 +57,7 @@ export function processHtml(html: string, repo: string) {
     }
   ); 
 
-  // Process regular images
+  // Process regular images 
   processedHtml = processedHtml.replace(
     /<img[^>]+src="([^"]+)"[^>]*>/g,
     (match, src) => {
