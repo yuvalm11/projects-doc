@@ -1,0 +1,107 @@
+name: Smart Daily Rebuild
+
+on:
+  # Run every day at 6 AM UTC
+  schedule:
+    - cron: '0 6 * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has-changes: ${{ steps.check.outputs.has-changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for comparison
+      
+      - name: Check for changes in project repositories
+        id: check
+        run: |
+          echo "Checking for changes in project repositories..."
+          
+          # Get list of projects from config
+          PROJECTS=$(node -e "
+            const { projects } = require('./src/config/projects.ts');
+            console.log(projects.map(p => p.repo).join(' '));
+          " 2>/dev/null || echo "inverted-pendulum mnist-vae prompter-plotter motor-position-correction")
+          
+          HAS_CHANGES=false
+          
+          # Check each project repository for changes
+          for repo in $PROJECTS; do
+            echo "Checking repository: yuvalm11/$repo"
+            
+            # Get the last commit date from the project repo
+            LAST_COMMIT=$(curl -s "https://api.github.com/repos/yuvalm11/$repo/commits/main" | jq -r '.commit.committer.date' 2>/dev/null || echo "")
+            
+            if [ -n "$LAST_COMMIT" ]; then
+              # Convert to timestamp for comparison
+              LAST_COMMIT_TS=$(date -d "$LAST_COMMIT" +%s 2>/dev/null || echo "0")
+              YESTERDAY_TS=$(date -d "yesterday" +%s)
+              
+              if [ "$LAST_COMMIT_TS" -gt "$YESTERDAY_TS" ]; then
+                echo "Repository $repo has changes since yesterday"
+                HAS_CHANGES=true
+              else
+                echo "Repository $repo has no changes since yesterday"
+              fi
+            else
+              echo "Could not fetch commit info for $repo"
+            fi
+          done
+          
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+          echo "Final result: has-changes=$HAS_CHANGES"
+
+  rebuild-and-deploy:
+    needs: check-changes
+    if: needs.check-changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build with Astro
+        run: npm run build
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: rebuild-and-deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  no-changes-notification:
+    needs: check-changes
+    if: needs.check-changes.outputs.has-changes == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No changes detected
+        run: echo "No changes detected in project repositories. Skipping rebuild."
