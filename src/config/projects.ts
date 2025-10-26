@@ -34,6 +34,13 @@ export const projects: Project[] = [
     repo: 'motor-position-correction',
     tags: ['Signal Processing', 'Control Systems', 'Python', 'Fourier Analysis'],
     githubUrl: 'https://github.com/yuvalm11/motor-position-correction'
+  },
+  {
+    name: 'Insta Bot',
+    description: 'An automation script to post my photos daily on my Instagram account',
+    repo: 'insta-bot',
+    tags: ['Instagram Graph API', 'Python', "Automation", "Photography", "GitHub Actions"],
+    githubUrl: 'https://github.com/yuvalm11/insta-bot'
   }
   // Add more projects here as they become available
 ]; 
