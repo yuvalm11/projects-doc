@@ -15,6 +15,13 @@ export const projects: Project[] = [
     githubUrl: 'https://github.com/yuvalm11/inverted-pendulum'
   },
   {
+    name: 'Hemingway LLM',
+    description: 'Fine tuning an LLM that generates Hemingway-style text',
+    repo: 'hemingway',
+    tags: ['LLM', 'Fine Tuning', 'Transformers', 'Generative AI'],
+    githubUrl: 'https://github.com/yuvalm11/hemingway'
+  },
+  {
     name: 'MNIST Variational Autoencoder',
     description: 'Variational Autoencoder for MNIST image generation with a lightweight CNN classifier',
     repo: 'mnist-vae',

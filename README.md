@@ -15,7 +15,7 @@ I used Astro and Cursor to build a website that displays the documentation for m
 }
 ```
 2. Ensure the repo has a `README.md` on main branch
-3. Build and test: `npm run build`
+3. Build and test: `npm run build`, `npm run dev`
 4. Push changes:
 ```bash
 git add . && git commit -m "Add [project-name] project" && git push
