@@ -32,7 +32,7 @@ export const projects: Project[] = [
     name: 'Prompter Plotter', 
     description: 'Use AI image generation to create a real life drawing',
     repo: 'prompter-plotter',
-    tags: ['Generative AI', 'Machine building', 'Python', 'Image processing'],
+    tags: ['Generative AI', 'Machine building', 'Control Systems', 'Image processing'],
     githubUrl: 'https://github.com/yuvalm11/prompter-plotter'
   },
   {
@@ -46,7 +46,7 @@ export const projects: Project[] = [
     name: 'Insta Bot',
     description: 'An automation script to post my photos daily on my Instagram account',
     repo: 'insta-bot',
-    tags: ['Instagram Graph API', 'Python', "Automation", "Photography", "GitHub Actions"],
+    tags: ['Instagram Graph API', "Automation", "Photography", "GitHub Actions"],
     githubUrl: 'https://github.com/yuvalm11/insta-bot'
   }
   // Add more projects here as they become available
