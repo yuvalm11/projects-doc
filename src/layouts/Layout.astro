@@ -5,7 +5,12 @@ interface Props {
 }
 
 const { title, description = "Documentations of projects I built" } = Astro.props;
-const gaId = import.meta.env.PUBLIC_GA_ID;
+
+declare global {
+  interface Window {
+    toggleTheme: () => void;
+  }
+}
 
 // Format the title to be "uv's website | Page Title"
 const formattedTitle = title === "Home" ? "uv's website" : `uv's website | ${title}`;
@@ -19,19 +24,16 @@ const formattedTitle = title === "Home" ? "uv's website" : `uv's website | ${tit
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/projects-doc/favicon.svg" />
     <title>{formattedTitle}</title>
-    {gaId && (
-      <>
-        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
-        <script is:inline>
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${gaId}');
-          `}
-        </script>
-      </>
-    )}
+    {/* Google tag (gtag.js) */}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VLM5BY1J44"></script>
+    <script is:inline>
+      {`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-VLM5BY1J44');
+      `}
+    </script>
     <script>
       // Check for saved theme preference or use system preference
       const theme = (() => {
