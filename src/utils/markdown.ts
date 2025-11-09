@@ -25,7 +25,7 @@ export function processHtml(html: string, repo: string) {
         'default': 'demo_video.mp4'
       },
       'prompter-plotter': {
-        '4e38d26d-b78d-4b40-9968-4daa16c79359': 'intro_video.mp4', // First video
+        '9e9a56d0-ac93-448c-80e3-ed26cfc0d670': 'intro_video.mp4', // First video
         'ebbefab2-2eee-4592-a7b4-9ad754dcc5d3': 'mechanics_video.mp4', // Second video
         'default': 'demo_video.mp4'
       }
