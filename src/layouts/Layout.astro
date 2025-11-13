@@ -19,21 +19,20 @@ const formattedTitle = title === "Home" ? "uv's website" : `uv's website | ${tit
 <!DOCTYPE html>
 <html lang="en">
   <head>
+        <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VLM5BY1J44"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-VLM5BY1J44');
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/projects-doc/favicon.svg" />
     <title>{formattedTitle}</title>
-    {/* Google tag (gtag.js) */}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VLM5BY1J44"></script>
-    <script is:inline>
-      {`
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-VLM5BY1J44');
-      `}
-    </script>
     <script>
       // Check for saved theme preference or use system preference
       const theme = (() => {
