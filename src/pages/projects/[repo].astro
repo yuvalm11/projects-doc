@@ -145,6 +145,26 @@ if (!configuredProject) {
     max-width: 100%;
     height: auto;
   }
+  /* Make images inside links display inline (for icons/logos with text) */
+  .markdown-content a img,
+  .prose a img,
+  .markdown-content p a img,
+  .prose p a img,
+  .markdown-content a img.inline-image,
+  .prose a img.inline-image {
+    display: inline-block !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
+    margin-right: 0.25rem !important;
+  }
+  /* Make links with images display inline-flex */
+  .markdown-content a[style*="inline-flex"],
+  .prose a[style*="inline-flex"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    text-decoration: none;
+  }
   .prose pre {
     background-color: #1a1a1a;
     padding: 1rem;

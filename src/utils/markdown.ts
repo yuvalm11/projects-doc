@@ -95,6 +95,23 @@ export function processHtml(html: string, repo: string) {
     }
   );
 
+  // Fix images inside links: remove whitespace and add inline styling
+  // This handles cases like <a><img> text</a> to make them appear on one line
+  processedHtml = processedHtml.replace(
+    /<a([^>]*)>\s*<img([^>]*)>\s*([^<]+)<\/a>/g,
+    (match, linkAttrs, imgAttrs, text) => {
+      // Add style attribute to make the link display inline
+      const styleAttr = linkAttrs.includes('style=') 
+        ? linkAttrs.replace(/style="([^"]*)"/, 'style="$1; display: inline-flex; align-items: center; gap: 0.25rem;"')
+        : `${linkAttrs} style="display: inline-flex; align-items: center; gap: 0.25rem;"`;
+      // Add inline-image class to img for additional styling
+      const imgClassAttr = imgAttrs.includes('class=') 
+        ? imgAttrs.replace(/class="([^"]*)"/, 'class="$1 inline-image"')
+        : `${imgAttrs} class="inline-image"`;
+      return `<a${styleAttr}><img${imgClassAttr}>${text.trim()}</a>`;
+    }
+  );
+
   return processedHtml;
 }
 
