@@ -48,6 +48,13 @@ export const projects: Project[] = [
     repo: 'insta-bot',
     tags: ['Instagram Graph API', "Automation", "Photography", "GitHub Actions"],
     githubUrl: 'https://github.com/yuvalm11/insta-bot'
+  },
+  {
+    name: 'Personal Website',
+    description: 'Its this website! Automatically parses GitHub READMEs to a nice documentation website',
+    repo: 'projects-doc',
+    tags: ['Astro', 'Web Development', 'GitHub Actions', 'TypeScript'],
+    githubUrl: 'https://github.com/yuvalm11/projects-doc'
   }
   // Add more projects here as they become available
 ]; 
