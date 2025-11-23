@@ -51,7 +51,7 @@ export const projects: Project[] = [
   },
   {
     name: 'Personal Website',
-    description: 'Its this website! Automatically parses GitHub READMEs to a nice documentation website',
+    description: 'It\'s this website! Automatically parses GitHub READMEs to a nice documentation website',
     repo: 'projects-doc',
     tags: ['Astro', 'Web Development', 'GitHub Actions', 'TypeScript'],
     githubUrl: 'https://github.com/yuvalm11/projects-doc'
