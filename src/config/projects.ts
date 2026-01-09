@@ -50,6 +50,13 @@ export const projects: Project[] = [
     githubUrl: 'https://github.com/yuvalm11/insta-bot'
   },
   {
+    name: 'Table Timer',
+    description: 'A tiny desk clock to remind me to stay mobile in my office work',
+    repo: 'table-timer',
+    tags: ['Embedded systems', "Electronics", "Product Design"],
+    githubUrl: 'https://github.com/yuvalm11/table-timer'
+  },
+  {
     name: 'Personal Website',
     description: 'It\'s this website! Automatically parses GitHub READMEs to a nice documentation website',
     repo: 'projects-doc',
