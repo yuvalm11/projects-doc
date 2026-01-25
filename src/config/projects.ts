@@ -62,6 +62,13 @@ export const projects: Project[] = [
     repo: 'projects-doc',
     tags: ['Astro', 'Web Development', 'GitHub Actions', 'TypeScript'],
     githubUrl: 'https://github.com/yuvalm11/projects-doc'
+  },
+  {
+    name: 'Mini Game Console',
+    description: 'Handheld Atari-style game console',
+    repo: 'mini-arcade',
+    tags: ['Embedded systems', "Electronics", "Product Design", "Game Development", "C++"],
+    githubUrl: 'https://github.com/yuvalm11/mini-arcade'
   }
   // Add more projects here as they become available
 ]; 
