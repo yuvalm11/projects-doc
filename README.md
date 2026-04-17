@@ -17,7 +17,8 @@ I also added a daily rebuild workflow that checks for changes in my project repo
   description: 'Project Description',
   repo: 'project-repo',
   tags: ['tag1', 'tag2'],
-  githubUrl: 'https://github.com/your-username/project-repo'
+  githubUrl: 'https://github.com/your-username/project-repo',
+  wip: true // optional: show the project under "Work in Progress"
 }
 ```
 2. Ensure the repo has a `README.md` on main branch

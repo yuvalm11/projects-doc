@@ -85,9 +85,16 @@ if (!configuredProject) {
   <article class="prose dark:prose-invert max-w-none">
     <div class="mb-8">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-          {project.name}
-        </h1>
+        <div class="flex items-center gap-3">
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            {project.name}
+          </h1>
+          {project.wip && (
+            <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium rounded-full">
+              Work in Progress
+            </span>
+          )}
+        </div>
       </div>
       <p class="text-gray-600 dark:text-gray-300 text-lg mb-4">
         {project.description}

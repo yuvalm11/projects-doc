@@ -1,6 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { projects } from '../config/projects';
+
+const completedProjects = projects.filter((p) => !p.wip);
+const wipProjects = projects.filter((p) => p.wip);
 ---
 
 <Layout title="Home">
@@ -9,13 +12,26 @@ import { projects } from '../config/projects';
 			<h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
 				Hi.
 			</h1>
-			<p class="text-xl text-gray-600 dark:text-gray-300">
-				I'm Yuval and I just graduated from MIT with a degree in Computer Science.<br>I love building stuff and I'll be documenting some of my projects in this website.
-			</p>
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<p class="text-xl text-gray-600 dark:text-gray-300">
+					I'm Yuval and I just graduated from MIT with a degree in Computer Science.<br>I love building stuff and I'll be documenting some of my projects in this website.
+				</p>
+				{wipProjects.length > 0 && (
+					<a
+						href="#work-in-progress"
+						class="self-start sm:self-center shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-sm font-medium rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
+					>
+						In the works
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+						</svg>
+					</a>
+				)}
+			</div>
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			{projects.map((project) => (
+			{completedProjects.map((project) => (
 				<a 
 					href={`/projects-doc/projects/${project.repo}`}
 					class="block bg-white dark:bg-[#1a1a1a] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
@@ -50,6 +66,61 @@ import { projects } from '../config/projects';
 				</a>
 			))}
 		</div>
+
+		{wipProjects.length > 0 && (
+			<div id="work-in-progress" class="mt-16 scroll-mt-24">
+				<div class="mb-8">
+					<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+						Work in Progress
+					</h2>
+					<p class="text-gray-600 dark:text-gray-300">
+						Projects I'm actively working on right now.
+					</p>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{wipProjects.map((project) => (
+						<a
+							href={`/projects-doc/projects/${project.repo}`}
+							class="block bg-white dark:bg-[#1a1a1a] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border-l-4 border-amber-400 dark:border-amber-500"
+						>
+							<div class="flex flex-col h-full">
+								<div class="flex-grow">
+									<div class="flex items-center gap-2 mb-2">
+										<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+											{project.name}
+										</h2>
+										<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium rounded-full">
+											WIP
+										</span>
+									</div>
+									<p class="text-gray-600 dark:text-gray-300 mb-4">
+										{project.description}
+									</p>
+									<div class="flex flex-wrap gap-2 mb-4">
+										{project.tags.map((tag) => (
+											<span class="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 text-sm rounded-full">
+												{tag}
+											</span>
+										))}
+									</div>
+								</div>
+								<div class="mt-auto pt-4 border-t border-gray-200 dark:border-[#333333]">
+									<div class="flex items-center justify-between">
+										<span class="text-sm text-gray-500 dark:text-gray-400">
+											Read More
+										</span>
+										<svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+										</svg>
+									</div>
+								</div>
+							</div>
+						</a>
+					))}
+				</div>
+			</div>
+		)}
 
 		{projects.length === 0 && (
 			<div class="text-center py-12">

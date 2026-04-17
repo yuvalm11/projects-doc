@@ -4,6 +4,7 @@ export interface Project {
   repo: string;
   tags: string[];
   githubUrl: string;
+  wip?: boolean;
 }
 
 export const projects: Project[] = [
@@ -69,6 +70,14 @@ export const projects: Project[] = [
     repo: 'mini-arcade',
     tags: ['Embedded systems', "Electronics", "Product Design", "Game Development", "C++"],
     githubUrl: 'https://github.com/yuvalm11/mini-arcade'
+  },
+  {
+    name: 'Millie',
+    description: 'A small desktop CNC mill built from a salvaged Creality CR-10',
+    repo: 'millie',
+    tags: ['CNC', 'Mechanical Design', 'Electronics', 'Firmware'],
+    githubUrl: 'https://github.com/yuvalm11/millie',
+    wip: true
   }
   // Add more projects here as they become available
 ]; 
