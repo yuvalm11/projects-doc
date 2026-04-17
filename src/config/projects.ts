@@ -5,6 +5,7 @@ export interface Project {
   tags: string[];
   githubUrl: string;
   wip?: boolean;
+  featured?: boolean;
 }
 
 export const projects: Project[] = [
@@ -13,21 +14,24 @@ export const projects: Project[] = [
     description: 'Policy Gradient RL algorithm for the cartpole problem',
     repo: 'inverted-pendulum',
     tags: ['Reinforcement Learning', 'JAX', 'Control Theory'],
-    githubUrl: 'https://github.com/yuvalm11/inverted-pendulum'
+    githubUrl: 'https://github.com/yuvalm11/inverted-pendulum',
+    featured: true
   },
   {
     name: 'Hemingway LLM',
     description: 'Fine tuning an LLM that generates Hemingway-style text',
     repo: 'hemingway',
     tags: ['LLM', 'Fine Tuning', 'Transformers', 'Generative AI'],
-    githubUrl: 'https://github.com/yuvalm11/hemingway'
+    githubUrl: 'https://github.com/yuvalm11/hemingway',
+    featured: true
   },
   {
     name: 'Prompter Plotter', 
     description: 'Use AI image generation to create a real life drawing',
     repo: 'prompter-plotter',
     tags: ['Generative AI', 'Machine building', 'Control Systems', 'Image processing'],
-    githubUrl: 'https://github.com/yuvalm11/prompter-plotter'
+    githubUrl: 'https://github.com/yuvalm11/prompter-plotter',
+    featured: true
   },
   {
     name: 'MNIST Variational Autoencoder',

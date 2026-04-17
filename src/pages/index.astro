@@ -1,9 +1,22 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { projects } from '../config/projects';
+import { projects, type Project } from '../config/projects';
 
-const completedProjects = projects.filter((p) => !p.wip);
+const featuredProjects = projects.filter((p) => p.featured && !p.wip);
 const wipProjects = projects.filter((p) => p.wip);
+const latestWip = wipProjects[wipProjects.length - 1]; // most recently added WIP
+const totalProjects = projects.length;
+
+type Slide =
+	| { kind: 'wip'; project: Project }
+	| { kind: 'featured'; project: Project }
+	| { kind: 'archive' };
+
+const slides: Slide[] = [
+	...(latestWip ? [{ kind: 'wip' as const, project: latestWip }] : []),
+	...featuredProjects.map((p) => ({ kind: 'featured' as const, project: p })),
+	{ kind: 'archive' as const }
+];
 ---
 
 <Layout title="Home">
@@ -12,115 +25,183 @@ const wipProjects = projects.filter((p) => p.wip);
 			<h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
 				Hi.
 			</h1>
-			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<p class="text-xl text-gray-600 dark:text-gray-300">
-					I'm Yuval and I just graduated from MIT with a degree in Computer Science.<br>I love building stuff and I'll be documenting some of my projects in this website.
-				</p>
-				{wipProjects.length > 0 && (
-					<a
-						href="#work-in-progress"
-						class="self-start sm:self-center shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-sm font-medium rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
-					>
-						In the works
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-						</svg>
-					</a>
-				)}
-			</div>
+			<p class="text-xl text-gray-600 dark:text-gray-300">
+				I'm Yuval. I'm a Senior Software Engineer and just graduated from MIT with a degree in Computer Science.<br>I love building stuff and I'll be documenting some of my projects in this website.
+			</p>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			{completedProjects.map((project) => (
-				<a 
-					href={`/projects-doc/projects/${project.repo}`}
-					class="block bg-white dark:bg-[#1a1a1a] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
-				>
-					<div class="flex flex-col h-full">
-						<div class="flex-grow">
-							<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-								{project.name}
-							</h2>
-							<p class="text-gray-600 dark:text-gray-300 mb-4">
-								{project.description}
-							</p>
-							<div class="flex flex-wrap gap-2 mb-4">
-								{project.tags.map((tag) => (
-									<span class="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 text-sm rounded-full">
-										{tag}
-									</span>
-								))}
-							</div>
-						</div>
-						<div class="mt-auto pt-4 border-t border-gray-200 dark:border-[#333333]">
-							<div class="flex items-center justify-between">
-								<span class="text-sm text-gray-500 dark:text-gray-400">
-									Read More
-								</span>
-								<svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-								</svg>
-							</div>
-						</div>
-					</div>
-				</a>
-			))}
-		</div>
-
-		{wipProjects.length > 0 && (
-			<div id="work-in-progress" class="mt-16 scroll-mt-24">
-				<div class="mb-8">
-					<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-						Work in Progress
+		<!-- ───────── Carousel ───────── -->
+		<section aria-label="Featured work" class="relative">
+			<div class="flex items-end justify-between mb-6">
+				<div>
+					<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+						Selected Work
 					</h2>
-					<p class="text-gray-600 dark:text-gray-300">
-						Projects I'm actively working on right now.
+					<p class="text-gray-600 dark:text-gray-300 mt-1 text-sm">
+						A few things I'm proud of — plus what I'm building right now.
 					</p>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{wipProjects.map((project) => (
-						<a
-							href={`/projects-doc/projects/${project.repo}`}
-							class="block bg-white dark:bg-[#1a1a1a] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border-l-4 border-amber-400 dark:border-amber-500"
-						>
-							<div class="flex flex-col h-full">
-								<div class="flex-grow">
-									<div class="flex items-center gap-2 mb-2">
-										<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-											{project.name}
-										</h2>
-										<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium rounded-full">
-											WIP
+				<div class="hidden sm:flex items-center gap-2">
+					<button
+						type="button"
+						data-carousel-prev
+						aria-label="Previous"
+						class="carousel-btn w-10 h-10 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#222] hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+						</svg>
+					</button>
+					<button
+						type="button"
+						data-carousel-next
+						aria-label="Next"
+						class="carousel-btn w-10 h-10 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#222] hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<div
+				data-carousel-track
+				class="carousel-track flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
+			>
+				{slides.map((slide) => {
+					if (slide.kind === 'wip') {
+						const project = slide.project;
+						return (
+							<a
+								href={`/projects-doc/projects/${project.repo}`}
+								class="carousel-card group snap-start shrink-0 relative flex flex-col justify-between rounded-xl p-6 overflow-hidden
+									bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-[#1a1a1a]
+									border border-amber-200 dark:border-amber-500/30
+									shadow-sm hover:shadow-lg transition-all duration-300"
+							>
+								<div>
+									<div class="flex items-center gap-2 mb-4">
+										<span class="relative flex h-2 w-2">
+											<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+											<span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+										</span>
+										<span class="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+											Now Building
 										</span>
 									</div>
-									<p class="text-gray-600 dark:text-gray-300 mb-4">
+									<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
+										{project.name}
+									</h3>
+									<p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
 										{project.description}
 									</p>
-									<div class="flex flex-wrap gap-2 mb-4">
-										{project.tags.map((tag) => (
-											<span class="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 text-sm rounded-full">
+									<div class="flex flex-wrap gap-1.5">
+										{project.tags.slice(0, 3).map((tag) => (
+											<span class="px-2 py-0.5 bg-white/60 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 text-xs rounded-full border border-amber-200/60 dark:border-transparent">
 												{tag}
 											</span>
 										))}
 									</div>
 								</div>
-								<div class="mt-auto pt-4 border-t border-gray-200 dark:border-[#333333]">
-									<div class="flex items-center justify-between">
-										<span class="text-sm text-gray-500 dark:text-gray-400">
-											Read More
-										</span>
-										<svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-										</svg>
+								<div class="mt-6 pt-4 border-t border-amber-200/50 dark:border-amber-500/20 flex items-center justify-between">
+									<span class="text-sm font-medium text-amber-700 dark:text-amber-300">
+										Follow along
+									</span>
+									<svg class="w-5 h-5 text-amber-700 dark:text-amber-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+									</svg>
+								</div>
+							</a>
+						);
+					}
+
+					if (slide.kind === 'featured') {
+						const project = slide.project;
+						return (
+							<a
+								href={`/projects-doc/projects/${project.repo}`}
+								class="carousel-card group snap-start shrink-0 flex flex-col justify-between rounded-xl p-6
+									bg-white dark:bg-[#1a1a1a]
+									border border-gray-200 dark:border-[#2a2a2a]
+									shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+							>
+								<div>
+									<span class="inline-block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+										Featured
+									</span>
+									<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
+										{project.name}
+									</h3>
+									<p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+										{project.description}
+									</p>
+									<div class="flex flex-wrap gap-1.5">
+										{project.tags.slice(0, 3).map((tag) => (
+											<span class="px-2 py-0.5 bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 text-xs rounded-full">
+												{tag}
+											</span>
+										))}
 									</div>
 								</div>
+								<div class="mt-6 pt-4 border-t border-gray-200 dark:border-[#2a2a2a] flex items-center justify-between">
+									<span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+										Read more
+									</span>
+									<svg class="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:translate-x-1 group-hover:text-gray-900 dark:group-hover:text-white transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+									</svg>
+								</div>
+							</a>
+						);
+					}
+
+					// archive card
+					return (
+						<a
+							href="/projects-doc/projects"
+							class="carousel-card archive-card group snap-start shrink-0 relative flex flex-col justify-between rounded-xl p-6 overflow-hidden
+								bg-gradient-to-br from-gray-900 to-gray-700 dark:from-[#2a2a2a] dark:to-[#151515]
+								text-white
+								shadow-sm hover:shadow-xl transition-all duration-300"
+						>
+							<div class="archive-grid-bg absolute inset-0 opacity-[0.06] pointer-events-none"></div>
+							<div class="relative">
+								<span class="inline-block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">
+									The Archive
+								</span>
+								<h3 class="text-2xl font-bold mb-3 leading-tight">
+									All {totalProjects} projects
+								</h3>
+								<p class="text-gray-300 mb-4">
+									Browse everything I've built — from RL and LLMs to CNC mills and embedded systems.
+								</p>
+							</div>
+							<div class="relative mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
+								<span class="text-sm font-medium">
+									See all projects
+								</span>
+								<svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+								</svg>
 							</div>
 						</a>
-					))}
+					);
+				})}
+			</div>
+
+			<!-- Progress bar -->
+			<div class="mt-4">
+				<div class="relative h-1 w-full bg-gray-200 dark:bg-[#2a2a2a] rounded-full overflow-hidden">
+					<div
+						data-carousel-progress
+						class="absolute top-0 left-0 h-full bg-gray-900 dark:bg-white rounded-full transition-all duration-200"
+						style="width: 20%"
+					></div>
 				</div>
 			</div>
-		)}
+		</section>
 
 		{projects.length === 0 && (
 			<div class="text-center py-12">
@@ -133,9 +214,96 @@ const wipProjects = projects.filter((p) => p.wip);
 </Layout>
 
 <style>
-	/* Add any custom styles here */
-	.prose {
-		max-width: 85ch;
-		margin: 0 auto;
+	.carousel-card {
+		/* card sizing: mobile shows ~1, tablet ~2, desktop ~3 */
+		width: min(85vw, 22rem);
+		min-height: 18rem;
+	}
+	@media (min-width: 640px) {
+		.carousel-card { width: 22rem; min-height: 19rem; }
+	}
+
+	.carousel-track {
+		scrollbar-width: none;
+	}
+	.carousel-track::-webkit-scrollbar {
+		display: none;
+	}
+
+	.line-clamp-3 {
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.archive-grid-bg {
+		background-image:
+			linear-gradient(to right, #fff 1px, transparent 1px),
+			linear-gradient(to bottom, #fff 1px, transparent 1px);
+		background-size: 24px 24px;
 	}
 </style>
+
+<script>
+	function initCarousel() {
+		const track = document.querySelector<HTMLElement>('[data-carousel-track]');
+		const prevBtn = document.querySelector<HTMLButtonElement>('[data-carousel-prev]');
+		const nextBtn = document.querySelector<HTMLButtonElement>('[data-carousel-next]');
+		const progressBar = document.querySelector<HTMLElement>('[data-carousel-progress]');
+		const indexEl = document.querySelector<HTMLElement>('[data-carousel-index]');
+		if (!track) return;
+
+		const cards = Array.from(track.querySelectorAll<HTMLElement>('.carousel-card'));
+		if (cards.length === 0) return;
+
+		const getStep = () => {
+			if (cards.length < 2) return track.clientWidth;
+			const a = cards[0].getBoundingClientRect();
+			const b = cards[1].getBoundingClientRect();
+			return b.left - a.left; // card width + gap
+		};
+
+		const update = () => {
+			const maxScroll = track.scrollWidth - track.clientWidth;
+			const scrolled = track.scrollLeft;
+			const ratio = maxScroll <= 0 ? 1 : Math.min(1, scrolled / maxScroll);
+
+			// figure out which card is most-visible
+			const step = getStep();
+			const currentIdx = Math.min(cards.length - 1, Math.round(scrolled / step));
+			const visibleCount = Math.max(1, Math.round(track.clientWidth / step));
+			const pages = Math.max(1, cards.length - visibleCount + 1);
+			const progressPct = pages === 1 ? 100 : (currentIdx / (pages - 1)) * 100;
+
+			if (progressBar) progressBar.style.width = `${Math.max(10, progressPct)}%`;
+			if (indexEl) indexEl.textContent = String(currentIdx + 1).padStart(2, '0');
+
+			if (prevBtn) prevBtn.toggleAttribute('disabled', scrolled <= 2);
+			if (nextBtn) nextBtn.toggleAttribute('disabled', ratio >= 0.995);
+		};
+
+		prevBtn?.addEventListener('click', () => {
+			track.scrollBy({ left: -getStep(), behavior: 'smooth' });
+		});
+		nextBtn?.addEventListener('click', () => {
+			track.scrollBy({ left: getStep(), behavior: 'smooth' });
+		});
+
+		track.addEventListener('scroll', update, { passive: true });
+		window.addEventListener('resize', update);
+
+		// keyboard support when track is focused
+		track.tabIndex = 0;
+		track.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowLeft') { e.preventDefault(); prevBtn?.click(); }
+			if (e.key === 'ArrowRight') { e.preventDefault(); nextBtn?.click(); }
+		});
+
+		update();
+	}
+
+	// run on initial load and after Astro view transitions (if ever added)
+	initCarousel();
+	document.addEventListener('astro:page-load', initCarousel);
+</script>
