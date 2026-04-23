@@ -11,6 +11,27 @@ import rehypeStringify from 'rehype-stringify';
 
 // Process the HTML to fix image and video URLs
 export function processHtml(html: string, repo: string) {
+  const toRawRepoUrl = (path: string) => {
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) {
+      return `https://raw.githubusercontent.com/yuvalm11/${repo}/main${path}`;
+    }
+    return `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${path}`;
+  };
+
+  const MODEL_VIEWER_PLACEHOLDER_FILENAMES = new Set([
+    'model-viewer.png',
+    'model-viewer.jpg',
+    'model-viewer.jpeg',
+    'model-viewer.webp',
+    'model-viewer-placeholder.png'
+  ]);
+
+  const extractModelPathFromAlt = (altText: string) => {
+    const match = altText.match(/(?:^|\s)model:([^\s]+)(?:\s|$)/i);
+    return match ? match[1].trim() : '';
+  };
+
   // Get the appropriate video file based on the repository and attachment ID
   const getVideoFile = (repo: string, attachmentId?: string) => {
     // Map repository names and attachment IDs to their video files
@@ -57,16 +78,36 @@ export function processHtml(html: string, repo: string) {
     }
   ); 
 
+  // Convert README placeholder images to <model-viewer>.
+  // Usage in README: ![model:assets/demo.glb](model-viewer.png)
+  processedHtml = processedHtml.replace(
+    /<img([^>]*)src="([^"]+)"([^>]*)>/g,
+    (match, beforeSrc, src, afterSrc) => {
+      const filename = src.split('/').pop()?.split('?')[0]?.toLowerCase();
+      if (!filename || !MODEL_VIEWER_PLACEHOLDER_FILENAMES.has(filename)) {
+        return match;
+      }
+
+      const attrs = `${beforeSrc}${afterSrc}`;
+      const altMatch = attrs.match(/alt="([^"]*)"/i);
+      const altText = altMatch ? altMatch[1] : '';
+      const modelPath = extractModelPathFromAlt(altText);
+      if (!modelPath) return match;
+
+      const modelSrc = toRawRepoUrl(modelPath);
+      const posterSrc = toRawRepoUrl(src);
+      const cleanedAlt =
+        altText.replace(/(?:^|\s)model:[^\s]+(?:\s|$)/gi, ' ').trim() || '3D model';
+
+      return `<model-viewer class="markdown-model-viewer" src="${modelSrc}" poster="${posterSrc}" alt="${cleanedAlt}" camera-controls touch-action="pan-y" ar ar-modes="webxr scene-viewer quick-look"></model-viewer>`;
+    }
+  );
+
   // Process regular images 
   processedHtml = processedHtml.replace(
     /<img[^>]+src="([^"]+)"[^>]*>/g,
     (match, src) => {
-      if (src.startsWith('http')) return match;
-      if (src.startsWith('/')) {
-        const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main${src}`;
-        return match.replace(src, fullUrl);
-      }
-      const fullUrl = `https://raw.githubusercontent.com/yuvalm11/${repo}/main/${src}`;
+      const fullUrl = toRawRepoUrl(src);
       return match.replace(src, fullUrl);
     }
   );

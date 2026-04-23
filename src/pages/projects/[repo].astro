@@ -82,6 +82,8 @@ if (!configuredProject) {
 ---
 
 <Layout title={project.name}>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
   <article class="prose dark:prose-invert max-w-none">
     <div class="mb-8">
       <div class="flex items-center justify-between mb-4">
@@ -262,6 +264,21 @@ if (!configuredProject) {
   }
   .dark .markdown-content video {
     border-color: #374151;
+  }
+  :global(.markdown-content .markdown-model-viewer) {
+    width: 100% !important;
+    height: 22rem !important;
+    min-height: 22rem !important;
+    max-width: 100%;
+    margin: 1rem auto;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    display: block;
+  }
+  :global(.dark .markdown-content .markdown-model-viewer) {
+    border-color: #374151;
+    background: #111827;
   }
   /* Prevent page from shrinking too much on mobile */
   body {
